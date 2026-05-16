@@ -1,0 +1,19 @@
+/vendor
+/build
+/coverage
+composer.lock
+composer.phar
+.phpunit.result.cache
+.phpunit.cache/
+.idea/
+.vscode/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local Claude Code settings (per-machine)
+/.claude
+
+# Local-only planning notes — not for public consumers
+CLAUDE.md

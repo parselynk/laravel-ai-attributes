@@ -1,0 +1,60 @@
+{
+    "name": "parselynk/laravel-ai-attributes",
+    "description": "Add AI-powered computed attributes to any Eloquent model with a single trait.",
+    "keywords": ["laravel", "eloquent", "ai", "claude", "openai", "ollama", "attributes", "llm"],
+    "homepage": "https://github.com/parselynk/laravel-ai-attributes",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Reza",
+            "email": "witch5062@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Parselynk\\AiAttributes\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Parselynk\\AiAttributes\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint",
+        "playground": "./bin/playground"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Parselynk\\AiAttributes\\AiAttributesServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

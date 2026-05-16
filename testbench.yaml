@@ -1,0 +1,10 @@
+providers:
+  - Parselynk\AiAttributes\AiAttributesServiceProvider
+
+env:
+  - APP_NAME=laravel-ai-attributes-playground
+  - APP_ENV=local
+  - APP_DEBUG=true
+  - CACHE_STORE=file
+  - DB_CONNECTION=sqlite
+  - AI_ATTRIBUTES_DRIVER=claude
