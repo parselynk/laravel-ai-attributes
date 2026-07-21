@@ -66,6 +66,18 @@ return [
             ],
         ],
 
+        'ollama' => [
+            'base_url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
+            'model' => env('OLLAMA_MODEL', 'llama3.2:3b'),
+            'timeout' => (int) env('OLLAMA_TIMEOUT', 60),
+            // Default to 0 for predictable structured output. Set higher (0.7–1.2) for creative text.
+            'temperature' => (float) env('OLLAMA_TEMPERATURE', 0),
+            'retries' => [
+                'max_attempts' => (int) env('OLLAMA_RETRIES_MAX', 2),
+                'base_delay_ms' => (int) env('OLLAMA_RETRIES_DELAY_MS', 500),
+            ],
+        ],
+
     ],
 
 ];

@@ -57,8 +57,12 @@ Set your API keys in `.env`:
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 
+# Or use Ollama — no key needed, runs locally:
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+
 # Pick the default driver:
-AI_ATTRIBUTES_DRIVER=claude   # or "openai"
+AI_ATTRIBUTES_DRIVER=claude   # or "openai" or "ollama"
 ```
 
 ## Usage
@@ -122,10 +126,58 @@ AI_ATTRIBUTES_CACHE_TTL=2592000   # 30 days, in seconds
 
 ## Available drivers
 
-| Driver   | Provider           | Default model       |
-|----------|--------------------|---------------------|
-| `claude` | Anthropic          | `claude-sonnet-4-6` |
-| `openai` | OpenAI             | `gpt-4o-mini`       |
+| Driver   | Provider           | Default model       | Cost          | Notes |
+|----------|--------------------|---------------------|---------------|-------|
+| `claude` | Anthropic          | `claude-sonnet-4-6` | paid API      | Best quality |
+| `openai` | OpenAI             | `gpt-4o-mini`       | paid API      | Good balance |
+| `ollama` | Ollama (local LLM) | `llama3.2:3b`       | **free**      | Runs on your machine — no API key, no internet, no bills |
+
+### Using the Ollama driver
+
+Ollama lets you run open-source models locally. Great for privacy, cost control, or offline development.
+
+**1. Install and start Ollama:**
+
+```bash
+brew install ollama          # macOS
+brew services start ollama   # runs on http://localhost:11434
+```
+
+See [ollama.com](https://ollama.com) for other platforms.
+
+**2. Pull a model:**
+
+```bash
+ollama pull qwen2.5:7b       # recommended — strong at structured output
+# or
+ollama pull llama3.2:3b      # smaller / faster, less consistent
+```
+
+**3. Point the package at Ollama:**
+
+```dotenv
+AI_ATTRIBUTES_DRIVER=ollama
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+That's it. Same trait, same caching, same retries — now talking to your local LLM.
+
+**Model recommendations for structured output (JSON, numbers, bool):**
+
+| Model | RAM | Notes |
+|---|---|---|
+| `qwen2.5:7b` | ~6 GB | Excellent at JSON, follows instructions reliably |
+| `llama3.1:8b` | ~7 GB | Strong general-purpose model |
+| `llama3.2:3b` | ~3 GB | Fast but inconsistent with JSON output — pair with `temperature: 0` |
+
+**Tip:** the package sends `temperature: 0` to Ollama by default for predictable structured output. Override per-attribute or globally via `OLLAMA_TEMPERATURE=0.7` if you want more creative text.
+
+**Pointing at a remote Ollama server** (Docker, GPU box, etc.):
+
+```dotenv
+OLLAMA_BASE_URL=http://my-gpu-server:11434
+```
+
 
 Switch the default at runtime:
 
@@ -188,6 +240,7 @@ return [
     'drivers' => [
         'claude' => [ /* api_key, base_url, model, max_tokens, timeout, version */ ],
         'openai' => [ /* api_key, base_url, model, max_tokens, timeout */ ],
+        'ollama' => [ /* base_url, model, temperature, timeout */ ],
     ],
 ];
 ```
@@ -203,13 +256,16 @@ Tests use [Pest](https://pestphp.com) and [Orchestra Testbench](https://packages
 
 ## Roadmap
 
-This is **Phase 1** — core trait, drivers, caching. Coming up:
+Shipped:
 
-- **Phase 2** — Queued generation, per-attribute config (model, max_tokens, JSON mode), retries.
-- **Phase 3** — Optional DB persistence, events, token-usage tracking.
-- **Phase 4** — Gemini, Ollama, Groq, OpenRouter drivers · streaming · Nova/Filament fields.
+- **Phase 1** — Core trait, Claude + OpenAI drivers, content-hash caching.
+- **Phase 2** — Per-attribute config, format casting (text/json/number/bool), retries with backoff, queued generation, runtime persona override, Artisan regenerate command.
+- **Phase 3 — Ollama driver** ✨ Local LLMs via Ollama with temperature control and configurable base URL (works with remote Ollama servers too).
 
-A goal of Phase 4 is to ship a first-class Ollama driver so `laravel-ai-attributes` becomes one of the most ergonomic ways to use a local LLM from PHP.
+Coming:
+
+- **Phase 4** — Filament admin UI integration (a paid companion plugin).
+- **Phase 5** — Optional DB persistence, events, token-usage tracking, additional drivers (Gemini, Groq, OpenRouter), streaming, embeddings + RAG.
 
 ## Contributing
 

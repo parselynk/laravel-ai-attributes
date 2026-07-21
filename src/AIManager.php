@@ -6,6 +6,7 @@ namespace Parselynk\AiAttributes;
 
 use Illuminate\Support\Manager;
 use Parselynk\AiAttributes\Drivers\ClaudeDriver;
+use Parselynk\AiAttributes\Drivers\OllamaDriver;
 use Parselynk\AiAttributes\Drivers\OpenAIDriver;
 
 class AIManager extends Manager
@@ -23,6 +24,11 @@ class AIManager extends Manager
     protected function createOpenaiDriver(): OpenAIDriver
     {
         return new OpenAIDriver($this->driverConfig('openai'));
+    }
+
+    protected function createOllamaDriver(): OllamaDriver
+    {
+        return new OllamaDriver($this->driverConfig('ollama'));
     }
 
     protected function driverConfig(string $name): array

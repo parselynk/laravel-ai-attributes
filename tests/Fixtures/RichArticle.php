@@ -17,7 +17,8 @@ class RichArticle extends Model
         'summary' => 'Summarize in 2 sentences.',
 
         'tags' => [
-            'prompt' => 'Return 3-5 topic tags as a JSON array of strings.',
+            'prompt' => 'Output ONLY a JSON array of 3-5 lowercase topic tags. No explanation,
+             no markdown, no preamble. Example output: ["php", "testing", "laravel"]',
             'format' => 'json',
         ],
 
