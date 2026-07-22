@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Parselynk\AiAttributes\Concerns;
 
 use Illuminate\Foundation\Bus\PendingDispatch;
-use Parselynk\AiAttributes\AIManager;
-use Parselynk\AiAttributes\Contracts\AIDriver;
+use Laravel\Ai\AnonymousAgent;
 use Parselynk\AiAttributes\Exceptions\AIAttributeException;
 use Parselynk\AiAttributes\Jobs\GenerateAiAttributeJob;
 use Parselynk\AiAttributes\Support\PromptCache;
+use Parselynk\AiAttributes\Support\PromptFormatter;
+
+use function Laravel\Ai\agent;
 
 /**
  * Adds AI-powered computed attributes to an Eloquent model.
@@ -26,16 +28,21 @@ use Parselynk\AiAttributes\Support\PromptCache;
  *         ],
  *
  *         'meta_description' => [
- *             'prompt'  => 'Write an SEO meta description in under 160 chars',
- *             'persona' => 'You are an SEO expert.',
- *             'driver'  => 'openai',
- *             'model'   => 'gpt-4o',
+ *             'prompt'   => 'Write an SEO meta description in under 160 chars',
+ *             'persona'  => 'You are an SEO expert.',
+ *             'provider' => 'openai',      // any provider from config/ai.php
+ *             'model'    => 'gpt-4o',
+ *             'timeout'  => 30,
  *         ],
  *     ];
  *
  *     $article->ai_summary;          // string
- *     $article->ai_tags;             // array
+ *     $article->ai_tags;             // array (auto-decoded)
  *     $article->ai_meta_description; // string from gpt-4o
+ *
+ * Provider + model + timeout are forwarded to laravel/ai. Persona becomes the
+ * agent's system instructions. Everything else (caching, format casting, queues,
+ * retries, artisan regenerate) is handled by this package.
  *
  * @property-read array<string, string|array<string, mixed>> $aiAttributes
  */
@@ -43,7 +50,6 @@ trait HasAIAttributes
 {
     /**
      * Runtime persona override, applied to the next AI attribute read and then cleared.
-     * Set via `aiPersona()`. NOT persisted with the model.
      */
     protected ?string $aiPersonaOverride = null;
 
@@ -69,12 +75,7 @@ trait HasAIAttributes
     }
 
     /**
-     * Override the persona for the NEXT AI attribute read.
-     * The override clears automatically after one read.
-     *
-     * Heads-up: every distinct persona produces a separate cache entry.
-     * If your persona varies per request, expect cache growth — use a short
-     * TTL or set `cache.enabled => false` for that attribute's use case.
+     * Override the persona for the NEXT AI attribute read. Auto-clears after one read.
      */
     public function aiPersona(string $persona): static
     {
@@ -84,8 +85,7 @@ trait HasAIAttributes
     }
 
     /**
-     * Returns the cached value (already cast to its format) without triggering an AI call.
-     * Returns null if the value is not yet cached.
+     * Return the cached value without triggering an AI call. Null if not cached.
      */
     public function aiAttributeOrNull(string $attribute): mixed
     {
@@ -104,10 +104,6 @@ trait HasAIAttributes
         return $this->castFormat($raw, (string) ($config['format'] ?? 'text'));
     }
 
-    /**
-     * True if a cached value already exists for this attribute, false otherwise.
-     * Does NOT trigger an AI call.
-     */
     public function hasAiAttribute(string $attribute): bool
     {
         $config = $this->resolveAttributeConfig($attribute);
@@ -120,10 +116,8 @@ trait HasAIAttributes
     }
 
     /**
-     * Dispatch the AI generation to the queue. The model must already be persisted
-     * because the queue job rehydrates from the database.
-     *
-     * Any pending `aiPersona()` override is consumed and forwarded to the job.
+     * Dispatch generation to Laravel's queue. Model must be persisted so the
+     * worker can rehydrate it.
      */
     public function generateAiAttributeAsync(string $attribute): PendingDispatch
     {
@@ -131,8 +125,6 @@ trait HasAIAttributes
             throw AIAttributeException::cannotQueueUnsavedModel(static::class);
         }
 
-        // Validate the attribute exists before dispatching, so errors surface immediately
-        // rather than from a worker.
         $this->resolveAttributeConfig($attribute);
 
         $persona = $this->aiPersonaOverride;
@@ -168,14 +160,33 @@ trait HasAIAttributes
 
         $raw = app(PromptCache::class)->remember(
             $this->aiCacheInputs($attribute, $config, $context),
-            fn () => $this->aiDriver($config['driver'] ?? null)->generate(
-                $config['prompt'],
-                $context,
-                $this->aiDriverOptions($config),
-            ),
+            fn () => $this->callAgent($config, $context),
         );
 
         return $this->castFormat($raw, (string) ($config['format'] ?? 'text'));
+    }
+
+    /**
+     * Delegate the actual AI call to laravel/ai.
+     */
+    protected function callAgent(array $config, array $context): string
+    {
+        $persona = (string) ($config['persona'] ?? '');
+        $instructions = PromptFormatter::systemMessage($persona !== '' ? $persona : null);
+        $message = PromptFormatter::userMessage($config['prompt'], $context);
+
+        $provider = $config['provider']
+            ?? config('ai-attributes.default_provider')
+            ?? null;
+
+        $response = agent($instructions)->prompt(
+            prompt: $message,
+            provider: $provider,
+            model: $config['model'] ?? null,
+            timeout: (int) ($config['timeout'] ?? config('ai-attributes.timeout', 60)),
+        );
+
+        return trim((string) $response);
     }
 
     protected function resolveAttributeConfig(string $attribute): array
@@ -204,33 +215,17 @@ trait HasAIAttributes
             'attribute' => $attribute,
             'prompt' => $config['prompt'],
             'persona' => $config['persona'] ?? null,
-            'driver' => $config['driver'] ?? null,
+            'provider' => $config['provider'] ?? config('ai-attributes.default_provider'),
             'model' => $config['model'] ?? null,
-            'max_tokens' => $config['max_tokens'] ?? null,
             'format' => $config['format'] ?? 'text',
             'attributes' => $context ?? $this->aiAttributeContext(),
         ];
-    }
-
-    protected function aiDriverOptions(array $config): array
-    {
-        return array_filter(
-            [
-                'persona' => $config['persona'] ?? null,
-                'model' => $config['model'] ?? null,
-                'max_tokens' => $config['max_tokens'] ?? null,
-            ],
-            fn ($value) => $value !== null,
-        );
     }
 
     protected function aiAttributeContext(): array
     {
         $attributes = $this->attributesToArray();
 
-        // Timestamps shouldn't affect AI output and serialize unstably across
-        // create/refresh boundaries (different microsecond precision), so omit
-        // them from the cache key.
         if ($this->usesTimestamps()) {
             unset(
                 $attributes[$this->getCreatedAtColumn()],
@@ -239,11 +234,6 @@ trait HasAIAttributes
         }
 
         return $attributes;
-    }
-
-    protected function aiDriver(?string $name = null): AIDriver
-    {
-        return app(AIManager::class)->driver($name);
     }
 
     protected function castFormat(string $raw, string $format): mixed
@@ -294,5 +284,14 @@ trait HasAIAttributes
             'no', 'false', '0', 'n', 'f' => false,
             default => throw AIAttributeException::invalidBool($raw),
         };
+    }
+
+    /**
+     * Anonymous agent class used by this trait. Exposed so tests can fake it via
+     * `AnonymousAgent::fake([...])` or `Ai::fakeAgent(AnonymousAgent::class, [...])`.
+     */
+    public static function aiAgentClass(): string
+    {
+        return AnonymousAgent::class;
     }
 }

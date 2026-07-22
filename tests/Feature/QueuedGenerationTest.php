@@ -2,15 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Laravel\Ai\AnonymousAgent;
 use Parselynk\AiAttributes\Exceptions\AIAttributeException;
 use Parselynk\AiAttributes\Jobs\GenerateAiAttributeJob;
 use Parselynk\AiAttributes\Tests\Fixtures\PersistentArticle;
-
-beforeEach(function () {
-    config()->set('ai-attributes.default', 'claude');
-});
 
 it('generateAiAttributeAsync dispatches a job for the model and attribute', function () {
     Queue::fake();
@@ -47,24 +43,20 @@ it('forwards the runtime persona override to the job and clears it on the model'
         return $job->personaOverride === 'You are a poet.';
     });
 
-    // Override should have been consumed.
     expect((fn () => $this->aiPersonaOverride)->call($article))->toBeNull();
 });
 
 it('the job populates the cache when handled', function () {
-    Http::fake([
-        'api.anthropic.com/*' => Http::response([
-            'content' => [['type' => 'text', 'text' => 'job-generated summary']],
-        ]),
-    ]);
+    AnonymousAgent::fake(['job-generated summary']);
 
     $article = PersistentArticle::create(['title' => 'Hi', 'body' => 'world']);
 
     $job = new GenerateAiAttributeJob($article, 'summary');
     $job->handle();
 
-    // Re-reading should hit cache, not the API.
-    Http::fake();
+    // Re-reading should hit cache, not the AI. Fake with a different response
+    // to prove the cache is used.
+    AnonymousAgent::fake(['THIS SHOULD NOT BE USED']);
     expect($article->ai_summary)->toBe('job-generated summary');
 });
 
@@ -74,21 +66,22 @@ it('aiAttributeOrNull returns null before the value is generated', function () {
     expect($article->aiAttributeOrNull('summary'))->toBeNull();
 });
 
-it('aiAttributeOrNull returns the cached value without calling the API', function () {
-    Http::fake([
-        'api.anthropic.com/*' => Http::response([
-            'content' => [['type' => 'text', 'text' => 'cached']],
-        ]),
-    ]);
+it('aiAttributeOrNull returns the cached value without calling the AI', function () {
+    $calls = 0;
+    AnonymousAgent::fake(function () use (&$calls) {
+        $calls++;
+
+        return 'cached';
+    });
 
     $article = PersistentArticle::create(['title' => 'Hi', 'body' => 'world']);
     $article->ai_summary; // populate cache
 
-    Http::assertSentCount(1);
+    expect($calls)->toBe(1);
 
-    // Now reading via aiAttributeOrNull should NOT make a new HTTP call.
+    // Reading via aiAttributeOrNull should NOT call the AI again.
     expect($article->aiAttributeOrNull('summary'))->toBe('cached');
-    Http::assertSentCount(1);
+    expect($calls)->toBe(1);
 });
 
 it('hasAiAttribute is false before generation, true after', function () {
@@ -96,11 +89,7 @@ it('hasAiAttribute is false before generation, true after', function () {
 
     expect($article->hasAiAttribute('summary'))->toBeFalse();
 
-    Http::fake([
-        'api.anthropic.com/*' => Http::response([
-            'content' => [['type' => 'text', 'text' => 'now cached']],
-        ]),
-    ]);
+    AnonymousAgent::fake(['now cached']);
 
     $article->ai_summary;
 

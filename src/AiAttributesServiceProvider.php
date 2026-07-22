@@ -16,8 +16,6 @@ class AiAttributesServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/ai-attributes.php', 'ai-attributes');
 
-        $this->app->singleton(AIManager::class, fn ($app) => new AIManager($app));
-
         $this->app->singleton(PromptCache::class, fn ($app) => new PromptCache(
             $app->make(CacheFactory::class),
             $app->make(ConfigRepository::class),

@@ -1,7 +1,7 @@
 {
     "name": "parselynk/laravel-ai-attributes",
-    "description": "Add AI-powered computed attributes to any Eloquent model with a single trait.",
-    "keywords": ["laravel", "eloquent", "ai", "claude", "openai", "ollama", "attributes", "llm"],
+    "description": "Add AI-powered computed attributes to any Eloquent model — a thin Eloquent layer on top of the official Laravel AI SDK.",
+    "keywords": ["laravel", "eloquent", "ai", "laravel-ai", "attributes", "llm", "ollama"],
     "homepage": "https://github.com/parselynk/laravel-ai-attributes",
     "license": "MIT",
     "type": "library",
@@ -13,16 +13,17 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "illuminate/contracts": "^11.0|^12.0",
-        "illuminate/database": "^11.0|^12.0",
-        "illuminate/http": "^11.0|^12.0",
-        "illuminate/support": "^11.0|^12.0"
+        "php": "^8.3",
+        "illuminate/console": "^12.62|^13.0",
+        "illuminate/contracts": "^12.62|^13.0",
+        "illuminate/database": "^12.62|^13.0",
+        "illuminate/support": "^12.62|^13.0",
+        "laravel/ai": "^0.10"
     },
     "require-dev": {
         "laravel/pint": "^1.18",
         "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^10.0",
         "pestphp/pest": "^3.0",
         "pestphp/pest-plugin-laravel": "^3.0"
     },

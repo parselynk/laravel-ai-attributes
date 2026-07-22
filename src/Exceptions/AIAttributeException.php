@@ -8,33 +8,6 @@ use RuntimeException;
 
 class AIAttributeException extends RuntimeException
 {
-    public static function missingApiKey(string $driver): self
-    {
-        return new self(sprintf(
-            'Missing API key for AI driver [%s]. Set the corresponding environment variable.',
-            $driver,
-        ));
-    }
-
-    public static function providerFailed(string $driver, int $status, string $body): self
-    {
-        return new self(sprintf(
-            'AI provider [%s] returned HTTP %d: %s',
-            $driver,
-            $status,
-            mb_strimwidth($body, 0, 500, '...'),
-        ));
-    }
-
-    public static function malformedResponse(string $driver, mixed $payload): self
-    {
-        return new self(sprintf(
-            'AI provider [%s] returned a malformed response: %s',
-            $driver,
-            is_array($payload) ? json_encode($payload) : (string) $payload,
-        ));
-    }
-
     public static function undefinedAttribute(string $modelClass, string $attribute): self
     {
         return new self(sprintf(
@@ -89,14 +62,6 @@ class AIAttributeException extends RuntimeException
     {
         return new self(sprintf(
             'Cannot queue an AI attribute for unsaved %s — save the model first so the job can rehydrate it on the worker.',
-            $modelClass,
-        ));
-    }
-
-    public static function modelMissingTrait(string $modelClass): self
-    {
-        return new self(sprintf(
-            'Model [%s] does not use the HasAIAttributes trait.',
             $modelClass,
         ));
     }
