@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Laravel\Ai\AnonymousAgent;
+use Parselynk\AiAttributes\Exceptions\AIAttributeException;
 use Parselynk\AiAttributes\Tests\Fixtures\RichArticle;
 
 it('still supports the simple string-prompt form (backwards compat)', function () {
@@ -65,7 +66,7 @@ it('throws when JSON format gets invalid JSON back', function () {
 
     $article = new RichArticle(['title' => 'Hi']);
     $article->ai_tags;
-})->throws(\Parselynk\AiAttributes\Exceptions\AIAttributeException::class, 'invalid JSON');
+})->throws(AIAttributeException::class, 'invalid JSON');
 
 it('casts a numeric response to int when format=number', function () {
     AnonymousAgent::fake(['42']);
@@ -88,7 +89,7 @@ it('throws when format=number gets non-numeric back', function () {
 
     $article = new RichArticle(['title' => 'Hi']);
     $article->ai_sentiment;
-})->throws(\Parselynk\AiAttributes\Exceptions\AIAttributeException::class, 'non-numeric');
+})->throws(AIAttributeException::class, 'non-numeric');
 
 it('casts yes/no responses to bool when format=bool', function () {
     AnonymousAgent::fake(['yes', 'NO']);
@@ -105,7 +106,7 @@ it('throws when format=bool gets unrecognized text back', function () {
 
     $article = new RichArticle(['title' => 'Hi']);
     $article->ai_is_clickbait;
-})->throws(\Parselynk\AiAttributes\Exceptions\AIAttributeException::class, 'cast to bool');
+})->throws(AIAttributeException::class, 'cast to bool');
 
 it('regenerates when persona changes (cache key includes persona)', function () {
     $calls = 0;

@@ -1,5 +1,6 @@
 <?php
 
 declare(strict_types=1);
+use Parselynk\AiAttributes\Tests\TestCase;
 
-uses(\Parselynk\AiAttributes\Tests\TestCase::class)->in('Feature', 'Unit');
+uses(TestCase::class)->in('Feature', 'Unit');

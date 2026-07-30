@@ -11,9 +11,3 @@ composer.phar
 .env
 .env.*
 !.env.example
-
-# Local Claude Code settings (per-machine)
-/.claude
-
-# Local-only planning notes — not for public consumers
-CLAUDE.md

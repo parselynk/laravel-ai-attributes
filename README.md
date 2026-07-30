@@ -52,7 +52,7 @@ If you want AI in your Eloquent models with almost zero boilerplate — this is 
 ## Requirements
 
 - PHP **8.3+**
-- Laravel **12.62+** (or 13.x)
+- Laravel **12.62+**
 - [`laravel/ai`](https://packagist.org/packages/laravel/ai) **v0.10+** (installed as a dependency)
 
 ---
