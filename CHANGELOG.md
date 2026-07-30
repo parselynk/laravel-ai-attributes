@@ -5,7 +5,24 @@ All notable changes to `parselynk/laravel-ai-attributes` will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] — Refactored on top of the official Laravel AI SDK
+## [Unreleased]
+
+### Changed
+
+- Laravel constraint narrowed to `^12.62`. Laravel 13 is not yet supported because the
+  test toolchain (`orchestra/testbench`, `pest-plugin-laravel`) does not support it —
+  the constraint will widen once the suite runs green against 13.
+- Continuous integration now tests PHP 8.3/8.4 against Laravel 12, and enforces code
+  style with Pint.
+
+### Added
+
+- `.gitattributes` — development files are excluded from the Composer install archive.
+- Documented every environment variable this package reads in the README.
+
+## [2.0.0] — 2026-07-22
+
+Refactored on top of the official Laravel AI SDK.
 
 ### Breaking changes
 
@@ -21,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package classes removed (users should not have depended on these directly):
   - `Parselynk\AiAttributes\AIManager`
   - `Parselynk\AiAttributes\Contracts\AIDriver`
-  - `Parselynk\AiAttributes\Drivers\{Claude,OpenAI,Ollama}Driver`
+  - Everything under `Parselynk\AiAttributes\Drivers\` (the bundled provider drivers)
   - `Parselynk\AiAttributes\Support\HttpRetrier`
 
 ### Added
@@ -42,7 +59,7 @@ Initial public release.
 ### Added
 
 - `HasAIAttributes` trait that exposes `ai_*` magic accessors on any Eloquent model.
-- Claude, OpenAI, and Ollama drivers built on Laravel's `Http` facade.
+- Built-in provider drivers using Laravel's `Http` facade, with no vendor SDK dependencies.
 - `AIManager` driver resolver (extends `Illuminate\Support\Manager`).
 - `PromptCache` layer keyed by model class + attribute + prompt + serialized attributes.
 - Per-attribute config: persona, model, driver, max_tokens, format, temperature (Ollama).

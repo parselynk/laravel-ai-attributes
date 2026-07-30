@@ -1,0 +1,15 @@
+# Keep the Composer install archive to runtime code only.
+# These files matter in the repository, not inside someone's vendor/ directory.
+/tests              export-ignore
+/.github            export-ignore
+/bin                export-ignore
+/phpunit.xml        export-ignore
+/testbench.yaml     export-ignore
+/pint.json          export-ignore
+/.editorconfig      export-ignore
+/.gitattributes     export-ignore
+/CONTRIBUTING.md    export-ignore
+/SECURITY.md        export-ignore
+
+# Normalise line endings.
+* text=auto eol=lf

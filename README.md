@@ -77,6 +77,23 @@ Then pick a default provider for this package in your `.env`:
 AI_ATTRIBUTES_PROVIDER=openai   # or "anthropic", "ollama", "gemini", ...
 ```
 
+### Environment variables
+
+Provider credentials belong to `laravel/ai` and are documented in its own config. The
+variables below are the ones this package reads. All are optional and have sane defaults —
+add only what you need to your `.env`.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AI_ATTRIBUTES_PROVIDER` | laravel/ai's default | Provider used when an attribute doesn't name one. Must match a key in `config/ai.php`. |
+| `AI_ATTRIBUTES_TIMEOUT` | `60` | Seconds to wait for a single AI call. |
+| `AI_ATTRIBUTES_CACHE_ENABLED` | `true` | Set to `false` to call the provider on every read. |
+| `AI_ATTRIBUTES_CACHE_TTL` | `2592000` (30 days) | How long a generated value stays cached. |
+| `AI_ATTRIBUTES_CACHE_STORE` | app default | Cache store to use, e.g. `redis`. |
+| `AI_ATTRIBUTES_CACHE_PREFIX` | `ai_attr` | Prefix for cache keys. |
+
+See [`.env.example`](.env.example) for a copyable reference.
+
 ---
 
 ## Usage
@@ -260,12 +277,11 @@ expect($article->ai_summary)->toBe('A predictable summary.');
 
 Shipped:
 
-- **v1** — Core trait, own Claude + OpenAI + Ollama drivers, format casting, retries, queues, persona, artisan regenerate.
+- **v1** — Core trait, hand-written provider drivers, format casting, retries, queues, persona, artisan regenerate.
 - **v2** — Refactored on top of the official `laravel/ai` SDK. Now supports 14 providers automatically. Simpler codebase, framework-aligned.
 
 Coming:
 
-- Filament admin UI (paid companion plugin — [parselynk/filament-ai-fields](#) — coming soon).
 - Optional DB column persistence.
 - Events: `AIAttributeGenerated`, `AIAttributeFailed`.
 - Token-usage tracking hook.
